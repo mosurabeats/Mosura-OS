@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mosura OS Simulator</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #e9e6df; --ink: #1d1d1f; --muted: #6b6a66;
+  --body: #1c1d20; --body-hi: #2a2b30; --body-lo: #131417; --label: #d9dbde; --label-dim: #8b8e94;
+  --accent: #ffb547; --accent-2: #66e3d4; --keycap: #2c2e33; --keycap-hi: #3a3d43; --led: 0;
+  --oled-glow: rgba(150, 235, 255, .22);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #0d0e10; --ink: #e8e8ea; --muted: #8d8f95; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --bg: #0d0e10; --ink: #e8e8ea; --muted: #8d8f95; color-scheme: dark; }
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); }
+body { font: 14px/1.5 "Archivo", system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; padding-block: 24px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header.top { width: 100%; max-width: 1080px; display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 18px; flex-wrap: wrap; }
+header.top h1 { font-size: 22px; margin: 0; letter-spacing: .02em; }
+header.top h1 b { color: var(--accent); font-weight: 700; }
+header.top p { margin: 0; color: var(--muted); font-size: 13px; }
+.wrap { display: flex; gap: 28px; align-items: flex-start; width: 100%; max-width: 1080px; justify-content: center; flex-wrap: wrap; }
+
+/* ---- the unit ---- */
+.unit { width: 560px; max-width: 100%; background: linear-gradient(160deg, var(--body-hi), var(--body) 40%, var(--body-lo)); border-radius: 22px; padding: 22px 22px 26px; box-shadow: 0 30px 60px -20px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.07), inset 0 -2px 0 rgba(0,0,0,.4); color: var(--label); user-select: none; -webkit-user-select: none; touch-action: none; position: relative; }
+.brand { display: flex; justify-content: space-between; align-items: center; font: 600 10px "JetBrains Mono", monospace; letter-spacing: .18em; color: var(--label-dim); margin-bottom: 14px; }
+.brand .moth { color: var(--accent); }
+.row { display: flex; gap: 16px; align-items: center; }
+.knobs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 16px; padding: 0 30px; }
+.kn { display: flex; flex-direction: column; align-items: center; gap: 4px; font: 600 8px "JetBrains Mono", monospace; letter-spacing: .08em; color: var(--label-dim); }
+.kn .q { color: var(--accent); font-weight: 400; }
+.knob { --rot: 0deg; width: 40px; height: 40px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #4a4d55, #24262b 60%, #17181b); box-shadow: 0 3px 6px rgba(0,0,0,.6), inset 0 1px 1px rgba(255,255,255,.15); position: relative; cursor: ns-resize; border: none; padding: 0; }
+.knob::after { content: ""; position: absolute; left: 50%; top: 4px; width: 2px; height: 12px; margin-left: -1px; background: #f3f3f3; border-radius: 1px; transform-origin: 1px 16px; transform: rotate(var(--rot)); }
+.screen { flex: 1; display: flex; gap: 12px; align-items: center; }
+.bezel { flex: 1; background: #050607; border-radius: 10px; padding: 10px; box-shadow: inset 0 2px 8px rgba(0,0,0,.9), 0 1px 0 rgba(255,255,255,.06); position: relative; }
+.bezel canvas { width: 100%; display: block; image-rendering: pixelated; filter: drop-shadow(0 0 6px var(--oled-glow)); border-radius: 2px; }
+.bezel .bank { position: absolute; right: 10px; bottom: -16px; font: 600 8px "JetBrains Mono", monospace; letter-spacing: .12em; color: var(--accent); }
+.enc { display: flex; flex-direction: column; align-items: center; gap: 5px; font: 600 8px "JetBrains Mono", monospace; letter-spacing: .08em; color: var(--label-dim); }
+#value { --rot: 0deg; width: 54px; height: 54px; border-radius: 50%; border: none; padding: 0; cursor: grab; background: repeating-conic-gradient(from var(--rot), #33363c 0 6deg, #25272c 6deg 12deg); box-shadow: 0 4px 8px rgba(0,0,0,.6), inset 0 0 0 7px #2a2c31, inset 0 1px 0 8px rgba(255,255,255,.06); position: relative; }
+#value::after { content: ""; position: absolute; inset: 15px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #4b4e56, #24262b); }
+#value.down { transform: scale(.97); }
+.enc .q { color: var(--accent); font-weight: 400; text-align: center; line-height: 1.3; }
+
+.sect { font: 600 8px "JetBrains Mono", monospace; letter-spacing: .16em; color: var(--label-dim); margin: 16px 0 6px; display: flex; gap: 8px; align-items: center; }
+.sect::after { content: ""; flex: 1; height: 1px; background: rgba(255,255,255,.08); }
+.sect b { color: var(--accent); font-weight: 600; }
+#fx { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 7px; }
+#fn { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 7px; }
+.key { --led: 0; position: relative; border: none; background: linear-gradient(180deg, var(--keycap-hi), var(--keycap)); color: var(--label); border-radius: 6px; padding: 12px 3px 6px; min-height: 46px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 2px; box-shadow: 0 2px 0 #0e0f11, 0 3px 5px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.08); font-family: "JetBrains Mono", monospace; transition: transform .04s; }
+.key.down { transform: translateY(2px); box-shadow: 0 0 0 #0e0f11, 0 1px 2px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.05); }
+.key .led { position: absolute; top: 5px; left: 50%; width: 14px; height: 3px; margin-left: -7px; border-radius: 2px; background: rgba(255, 181, 71, calc(.12 + var(--led) * .88)); box-shadow: 0 0 calc(var(--led) * 8px) rgba(255, 181, 71, var(--led)); }
+.key .lab { font-size: 7.5px; font-weight: 600; letter-spacing: .02em; line-height: 1.1; text-align: center; }
+.key .role { font-size: 7.5px; color: var(--accent); line-height: 1.1; text-align: center; }
+.key .role.dim { color: var(--label-dim); }
+.key.fxk .led { background: rgba(102, 227, 212, calc(.12 + var(--led) * .88)); box-shadow: 0 0 calc(var(--led) * 8px) rgba(102, 227, 212, var(--led)); }
+.key.fxk .role { color: var(--accent-2); }
+.lower { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 14px; margin-top: 16px; }
+#banks, #side { display: flex; flex-direction: column; gap: 7px; }
+#side { margin-top: 10px; }
+.key.bank, .key.shift { min-height: 36px; }
+.key.shift .role { color: var(--accent); }
+#pads { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; align-content: start; }
+.pad { --rgb: 40,40,40; --glow: 0; aspect-ratio: 1; min-width: 0; padding: 0; border: none; border-radius: 9px; cursor: pointer; position: relative; background: radial-gradient(circle at 50% 45%, rgba(var(--rgb), calc(.35 + var(--glow) * .65)), rgba(var(--rgb), calc(.1 + var(--glow) * .4)) 70%), linear-gradient(180deg, #34363b, #24262a); box-shadow: 0 3px 0 #0b0c0d, 0 0 calc(var(--glow) * 22px) rgba(var(--rgb), calc(var(--glow) * .7)), inset 0 1px 0 rgba(255,255,255,.1), inset 0 0 0 1px rgba(0,0,0,.4); font-family: "JetBrains Mono", monospace; color: rgba(255,255,255,.55); transition: transform .03s; }
+.pad.down { transform: translateY(2px) scale(.985); box-shadow: 0 1px 0 #0b0c0d, 0 0 calc(var(--glow) * 22px) rgba(var(--rgb), calc(var(--glow) * .7)), inset 0 1px 0 rgba(255,255,255,.08); }
+.pad span { position: absolute; left: 7px; top: 5px; font-size: 9px; font-weight: 600; }
+.pad kbd { position: absolute; right: 7px; bottom: 5px; font: 9px "JetBrains Mono", monospace; opacity: .5; }
+.pad.drop { outline: 2px dashed var(--accent); outline-offset: 2px; }
+#power { position: absolute; inset: 0; border-radius: 22px; background: rgba(10,11,13,.72); backdrop-filter: blur(2px); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; cursor: pointer; border: none; color: #eee; font: 600 13px "Archivo", system-ui, sans-serif; letter-spacing: .04em; transition: opacity .3s; }
+#power .ring { width: 64px; height: 64px; border-radius: 50%; border: 2px solid var(--accent); display: grid; place-items: center; font-size: 26px; color: var(--accent); box-shadow: 0 0 24px rgba(255,181,71,.35); }
+#power small { color: #aaa; font-weight: 500; }
+#power.gone { opacity: 0; pointer-events: none; }
+#note { position: fixed; left: 50%; bottom: calc(22px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 20px); opacity: 0; background: #17181b; color: #f1f1f1; padding: 9px 16px; border-radius: 10px; font-size: 13px; box-shadow: 0 10px 30px rgba(0,0,0,.35); transition: all .25s; max-width: calc(100% - 32px); pointer-events: none; }
+#note.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ---- side guide ---- */
+aside { width: 380px; max-width: 100%; }
+aside h2 { font-size: 15px; margin: 0 0 8px; }
+aside section { background: color-mix(in srgb, var(--ink) 4%, transparent); border: 1px solid color-mix(in srgb, var(--ink) 10%, transparent); border-radius: 14px; padding: 14px 16px; margin-bottom: 14px; }
+aside table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+aside td { padding: 3px 0; vertical-align: top; }
+aside td:first-child { width: 46%; color: var(--muted); }
+aside kbd { font: 11px "JetBrains Mono", monospace; background: color-mix(in srgb, var(--ink) 9%, transparent); border-radius: 4px; padding: 1px 5px; }
+aside p { margin: 0 0 8px; color: var(--muted); font-size: 12.5px; }
+.modes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; font: 600 10px "JetBrains Mono", monospace; }
+.modes div { text-align: center; padding: 6px 0; border-radius: 6px; background: color-mix(in srgb, var(--ink) 7%, transparent); }
+.modes div em { display: block; font-style: normal; font-weight: 400; color: var(--muted); font-size: 9px; }
+@media (max-width: 600px) {
+  .unit { padding: 16px 12px 18px; border-radius: 16px; }
+  .row.top { gap: 10px; }
+  #value { width: 44px; height: 44px; }
+  .enc .q { display: none; }
+  .knobs { padding: 0; }
+  #fn { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .lower { grid-template-columns: 64px minmax(0, 1fr); gap: 10px; }
+  #pads { gap: 7px; }
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1><b>MOSURA</b> OS · simulator</h1>
+  <p>The real Mosura core, compiled to WebAssembly, behind an SP-404MKII-style panel.</p>
+</header>
+<div class="wrap">
+  <div class="unit" id="unit">
+    <div class="brand"><span>SP-404MKII <span class="moth">· MOSURA OS 0.1</span></span><span id="bankname">BANK A</span></div>
+    <div class="row top">
+      <div class="bezel"><canvas id="oled" width="512" height="256"></canvas></div>
+      <div class="enc"><button id="value" aria-label="VALUE encoder"></button>VALUE<span class="q">TURN · DATA<br>PUSH+TURN · CURSOR<br>TAP · WINDOW</span></div>
+    </div>
+    <div class="knobs">
+      <div class="kn"><button class="knob" data-ctrl="-1" aria-label="Volume"></button>VOLUME<span class="q">&nbsp;</span></div>
+      <div class="kn"><button class="knob" data-ctrl="0" aria-label="CTRL 1"></button>CTRL 1<span class="q">Q-LINK 1</span></div>
+      <div class="kn"><button class="knob" data-ctrl="1" aria-label="CTRL 2"></button>CTRL 2<span class="q">Q-LINK 2</span></div>
+      <div class="kn"><button class="knob" data-ctrl="2" aria-label="CTRL 3"></button>CTRL 3<span class="q">Q-LINK 3</span></div>
+    </div>
+    <div class="sect">EFFECTS <b>· SOFT KEYS F1–F6 ON EDIT SCREENS</b></div>
+    <div id="fx"></div>
+    <div class="sect">FUNCTION</div>
+    <div id="fn"></div>
+    <div class="lower">
+      <div><div id="banks"></div><div id="side"></div></div>
+      <div id="pads"></div>
+    </div>
+    <button id="power"><span class="ring">⏻</span>Power on<small>Click anywhere or press a key</small></button>
+  </div>
+  <aside>
+    <section>
+      <h2>Mode grid</h2>
+      <p>Tap <kbd>SHIFT</kbd> and press a pad, or hold SHIFT and press the pad. These are MPC 1000/2500-style mode pads.</p>
+      <div class="modes">
+        <div>1<em>MAIN</em></div><div>2<em>STEP</em></div><div>3<em>GRID</em></div><div>4<em>SONG</em></div>
+        <div>5<em>PROGRAM</em></div><div>6<em>MIXER</em></div><div>7<em>TRIM/CHOP</em></div><div>8<em>SETUP</em></div>
+        <div>9<em>NEXT SEQ</em></div><div>10<em>TRK MUTE</em></div><div>11<em>16 LEVELS</em></div><div>12<em>REPEAT</em></div>
+        <div>13<em>FULL LEVEL</em></div><div>14<em>TAP</em></div><div>15<em>HELP</em></div><div>16<em>STOCK</em></div>
+      </div>
+    </section>
+    <section>
+      <h2>Keyboard</h2>
+      <table>
+        <tr><td>Pads</td><td><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd> / <kbd>Q</kbd>–<kbd>R</kbd> / <kbd>A</kbd>–<kbd>F</kbd> / <kbd>Z</kbd>–<kbd>V</kbd></td></tr>
+        <tr><td>Play / stop</td><td><kbd>Space</kbd> (PATTERN SELECT)</td></tr>
+        <tr><td>Record / overdub</td><td><kbd>Y</kbd> (TR-REC)</td></tr>
+        <tr><td>Data wheel</td><td><kbd>←</kbd> <kbd>→</kbd> or mouse wheel on VALUE</td></tr>
+        <tr><td>Cursor</td><td><kbd>↑</kbd> <kbd>↓</kbd> or drag VALUE while held</td></tr>
+        <tr><td>Window / enter</td><td><kbd>Enter</kbd> (VALUE tap)</td></tr>
+        <tr><td>Back</td><td><kbd>Esc</kbd> (EXIT)</td></tr>
+        <tr><td>Mode grid</td><td>tap <kbd>Shift</kbd></td></tr>
+        <tr><td>Soft keys F1–F6</td><td><kbd>5</kbd>–<kbd>0</kbd> or <kbd>F1</kbd>–<kbd>F6</kbd></td></tr>
+        <tr><td>Undo / erase / repeat</td><td><kbd>U</kbd> · hold <kbd>⌫</kbd> + pad · hold <kbd>T</kbd> + pad</td></tr>
+        <tr><td>Banks A–E (Shift: F–J)</td><td><kbd>G</kbd> <kbd>H</kbd> <kbd>J</kbd> <kbd>L</kbd> <kbd>;</kbd></td></tr>
+      </table>
+    </section>
+    <section>
+      <h2>Try this</h2>
+      <p>1. Arm with <kbd>Y</kbd>, start with <kbd>Space</kbd>, and play pads after the count-in. Notes land on 1/16 (TC).</p>
+      <p>2. Press <kbd>U</kbd> to undo the take. Press it again to redo.</p>
+      <p>3. Open GRID (Shift, then pad 3). Pads are the 16 steps of the selected row.</p>
+      <p>4. Open TRIM (Shift, then pad 7), select pad 15 (BREAK) and press F5 to CHOP it to bank B.</p>
+      <p>5. Drop a WAV or MP3 on any pad to load it.</p>
+      <p>Sounds and effects here are browser stand-ins. On the unit, the stock engine plays the pads and runs the effects.</p>
+    </section>
+  </aside>
+</div>
+<div id="note"></div>
+<script type="module">
+  import { start } from './sim.js';
+  start().catch((e) => { document.getElementById('note').textContent = 'Failed to start: ' + e.message; document.getElementById('note').classList.add('show'); });
+</script>
+</body>
+</html>

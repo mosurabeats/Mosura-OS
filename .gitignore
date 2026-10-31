@@ -1,0 +1,6 @@
+build/
+# Roland's firmware is never committed
+*.bin
+!core/**/*.bin
+firmware/
+__pycache__/
